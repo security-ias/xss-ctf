@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<body>
+  <h3>another page</h3>
+  <div id="out">welcome </div>
+
+  <!-- This paragraph will get an onmouseover handler built from the query param -->
+  <p id="hoverTarget">hover me</p>
+
+  <script>
+    // Very simple / intentionally unsafe for CTF-style practice
+    const params = new URLSearchParams(location.search);
+    const payload = params.get('name') || '';
+
+    // 1) Reflect untrusted input directly (unsafe)
+    // Example payload to try: <img src=x onerror=alert(1)>
+    document.getElementById('out').innerHTML += payload;
+
+    // 2) Build an attribute with untrusted JS (unsafe)
+    // Example payload: alert(1)
+    document.getElementById('hoverTarget').setAttribute('onmouseover', payload);
+  </script>
+</body>
+</html>
