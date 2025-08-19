@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>XSS Mini-CTF (GitHub Pages)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Intentionally relaxed meta CSP for a static CTF. Do NOT copy to production. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob:;">
+  <style>
+    :root { --bg:#0b1020; --card:#121a33; --text:#e6ecff; --muted:#9fb1ff; --accent:#7aa2ff; --ok:#16a34a; --warn:#eab308; --bad:#ef4444; }
+    * { box-sizing:border-box; }
+    body { margin:0; font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial; background:var(--bg); color:var(--text); }
+    header { padding:20px; display:flex; gap:16px; align-items:center; justify-content:space-between; background:linear-gradient(180deg,#0b1020,#0c1226); border-bottom:1px solid #1f2a4a; position:sticky; top:0; z-index:5; }
+    .brand { font-weight:700; letter-spacing:.3px; }
+    nav { display:flex; gap:8px; flex-wrap:wrap; }
+    nav button { background:#192348; color:var(--text); border:1px solid #24315e; border-radius:12px; padding:8px 12px; cursor:pointer; }
+    nav button.active { outline:2px solid var(--accent); }
+    main { max-width:980px; margin:28px auto; padding:0 16px 80px; }
+    .card { background:var(--card); border:1px solid #1f2a4a; border-radius:16px; padding:18px; margin:16px 0; box-shadow:0 6px 28px rgba(0,0,0,.25); }
+    h1,h2,h3 { margin:0 0 8px; }
+    .muted { color:var(--muted); }
+    .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); }
+    label { display:block; margin:.2rem 0 .4rem; }
+    input[type="text"], textarea { width:100%; border-radius:12px; border:1px solid #27325f; padding:10px 12px; background:#0e1530; color:var(--text); }
+    textarea { min-height:120px; resize:vertical; }
+    .btn { display:inline-block; background:#223061; border:1px solid #2d3f7a; color:var(--text); border-radius:12px; padding:8px 12px; cursor:pointer; }
+    .btn.primary { background:#1f3a7a; border-color:#3355a8; }
+    .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; font-size:12px; border:1px solid #2a396e; background:#18224a; }
+    .ok { color:#bbf7d0; border-color:#14532d; background:#052e16; }
+    .warn { color:#fef3c7; border-color:#854d0e; background:#3b2a07; }
+    .bad { color:#fee2e2; border-color:#7f1d1d; background:#3b0a0a; }
+    code, pre { background:#0e1530; color:#dbeafe; border:1px solid #25356a; border-radius:12px; padding:2px 6px; }
+    pre { padding:12px; overflow:auto; }
+    .comment { padding:8px 10px; background:#0e1530; border:1px solid #28356b; border-radius:12px; margin:8px 0; }
+    .hint { margin-top:8px; }
+    footer { text-align:center; color:#90a1ff; padding:24px; border-top:1px solid #1f2a4a; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">🔒 XSS Mini-CTF</div>
+    <nav>
+      <button data-view="home" class="active">Home</button>
+      <button data-view="c1">Challenge 1 (Reflected)</button>
+      <button data-view="c2">Challenge 2 (Stored)</button>
+      <button data-view="score">Scoreboard</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <section id="view-home" class="card">
+      <h1>Welcome 👋</h1>
+      <p class="muted">This small, static CTF is designed to test DOM-based XSS skills safely on GitHub Pages. It includes two challenges and a local scoreboard.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Rules</h3>
+          <ul>
+            <li>Only test against this page. Don’t attack real sites.</li>
+            <li>No network exfiltration required; solve locally.</li>
+            <li>No automated scanners—manual payload craft encouraged.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Goal</h3>
+          <p>For each challenge, execute JavaScript and reveal the hidden flag <code>flag{...}</code>. When you have the flag, call <code>markSolved(&lt;id&gt;, &lt;flag&gt;)</code> in the console or from your payload to update the scoreboard.</p>
+          <p class="muted">Challenge IDs: <code>"c1"</code> and <code>"c2"</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHALLENGE 1 -->
+    <section id="view-c1" class="card hidden">
+      <h2>Challenge 1 — Reflected / DOM XSS</h2>
+      <p>Greet users by name via the query string. (Yes, this is intentionally vulnerable.)</p>
+
+      <div class="card">
+        <form id="c1-form" method="GET">
+          <label for="c1-name">Your name</label>
+          <input id="c1-name" name="name" type="text" placeholder="e.g. Alice" />
+          <button class="btn primary" type="submit">Greet me</button>
+        </form>
+        <div id="c1-greeting" class="card" style="margin-top:12px"></div>
+        <div class="muted">Tip: The greeting is built with <code>innerHTML</code> using <code>location.search</code> without sanitization.</div>
+      </div>
+
+      <!-- Hidden flag for C1. The challenge is to execute JS and read it. -->
+      <div id="c1-flag" data-flag="flag{reflected_dom_xss}" class="hidden"></div>
+
+      <details class="hint">
+        <summary>Hint (click to expand)</summary>
+        <p>Try injecting an HTML element with an event handler or an unexpected tag in the <code>name</code> parameter (e.g., <code>?name=...</code>).</p>
+      </details>
+    </section>
+
+    <!-- CHALLENGE 2 -->
+    <section id="view-c2" class="card hidden">
+      <h2>Challenge 2 — Stored / DOM XSS (localStorage)</h2>
+      <p>A tiny “comments” widget stores user input in <code>localStorage</code> and renders it using <code>innerHTML</code> (also intentionally unsafe).</p>
+
+      <div class="card">
+        <form id="c2-form">
+          <label for="c2-text">Add a comment</label>
+          <textarea id="c2-text" placeholder="Say something nice…"></textarea>
+          <div style="margin-top:8px">
+            <button class="btn primary" type="submit">Post</button>
+            <button class="btn" type="button" id="c2-clear">Clear all</button>
+          </div>
+        </form>
+        <div id="c2-list" style="margin-top:12px"></div>
+        <div class="muted">Tip: Newly added comments are re-rendered without escaping.</div>
+      </div>
+
+      <!-- Hidden flag for C2. -->
+      <meta id="c2-flag" name="ctf-flag" content="flag{stored_dom_xss}" />
+
+      <details class="hint">
+        <summary>Hint (click to expand)</summary>
+        <p>Can you store markup that executes when re-rendered? Consider event handlers or scriptable elements.</p>
+      </details>
+    </section>
+
+    <!-- SCOREBOARD -->
+    <section id="view-score" class="card hidden">
+      <h2>Scoreboard</h2>
+      <div id="score"></div>
+      <div class="muted" style="margin-top:8px">
+        Call <code>markSolved("c1", "...")</code> or <code>markSolved("c2", "...")</code> with the flag you discovered.
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    For education only. Don’t reuse these patterns in real apps.
+  </footer>
+
+  <script>
+    /* --------------------------
+       Simple router / nav
+    ---------------------------*/
+    const views = ["home","c1","c2","score"];
+    const navBtns = document.querySelectorAll("nav button");
+    function show(view){
+      views.forEach(v=>{
+        document.getElementById("view-"+v).classList.toggle("hidden", v!==view);
+        const b = Array.from(navBtns).find(x=>x.dataset.view===v);
+        if (b) b.classList.toggle("active", v===view);
+      });
+      if (view === "score") renderScore();
+    }
+    navBtns.forEach(b=>b.addEventListener("click", ()=>show(b.dataset.view)));
+    // Deep link via hash (#c1, #c2, #score)
+    const initial = location.hash?.slice(1);
+    show(views.includes(initial)?initial:"home");
+
+    /* --------------------------
+       SCOREBOARD
+    ---------------------------*/
+    function saveProgress(obj){
+      localStorage.setItem("xss_ctf_progress", JSON.stringify(obj));
+    }
+    function loadProgress(){
+      try { return JSON.parse(localStorage.getItem("xss_ctf_progress")||"{}"); }
+      catch { return {}; }
+    }
+    function renderScore(){
+      const s = loadProgress();
+      const wrap = document.getElementById("score");
+      wrap.innerHTML = "";
+      const entries = [
+        { id:"c1", name:"Challenge 1 (Reflected)", flag:s.c1 },
+        { id:"c2", name:"Challenge 2 (Stored)", flag:s.c2 }
+      ];
+      for (const e of entries){
+        const solved = !!e.flag;
+        const pillClass = solved ? "ok" : "warn";
+        wrap.insertAdjacentHTML("beforeend", `
+          <div class="card">
+            <div class="pill ${pillClass}">${solved?"Solved":"Unsolved"}</div>
+            <h3>${e.name}</h3>
+            <div class="muted">ID: <code>${e.id}</code></div>
+            <div style="margin-top:8px">${solved?`Flag: <code>${e.flag}</code>`:""}</div>
+          </div>
+        `);
+      }
+    }
+    // Called by players (or their payload) to record success.
+    window.markSolved = function(id, flag){
+      const s = loadProgress();
+      if(!/^c[12]$/.test(id)){
+        alert("Unknown challenge id");
+        return;
+      }
+      // Minimal validation to discourage random guesses:
+      if (!/^flag\{[a-z_]+_dom_xss\}$/.test(flag)) {
+        alert("That doesn't look like a valid flag format.");
+        return;
+      }
+      s[id] = flag;
+      saveProgress(s);
+      renderScore();
+      alert("✅ Recorded solve for "+id);
+      location.hash = "#score";
+      show("score");
+    };
+
+    /* --------------------------
+       CHALLENGE 1: reflected/DOM
+       (Intentionally unsafe)
+    ---------------------------*/
+    (function c1(){
+      const form = document.getElementById("c1-form");
+      const out = document.getElementById("c1-greeting");
+      const params = new URLSearchParams(location.search);
+      if (params.has("name")) {
+        const name = params.get("name");
+        // Vulnerable sink (do NOT do this in production)
+        out.innerHTML = `👋 Hi, <strong>${name}</strong>!`;
+      }
+      form.addEventListener("submit", (e)=>{
+        // Allow GET submit (so ?name= is visible)
+      });
+      // expose helper for players who get XSS execution:
+      window.__c1GetFlag = () => document.getElementById("c1-flag").dataset.flag;
+    })();
+
+    /* --------------------------
+       CHALLENGE 2: stored/DOM
+       (Intentionally unsafe)
+    ---------------------------*/
+    (function c2(){
+      const KEY = "c2_comments";
+      const form = document.getElementById("c2-form");
+      const text = document.getElementById("c2-text");
+      const list = document.getElementById("c2-list");
+      const clearBtn = document.getElementById("c2-clear");
+
+      function getComments(){
+        try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; }
+      }
+      function setComments(arr){ localStorage.setItem(KEY, JSON.stringify(arr)); }
+      function render(){
+        const items = getComments();
+        list.innerHTML = "";
+        // Vulnerable sink: render untrusted content directly via innerHTML
+        for (const html of items){
+          list.innerHTML += `<div class="comment">${html}</div>`;
+        }
+      }
+      form.addEventListener("submit", (e)=>{
+        e.preventDefault();
+        const v = text.value;
+        if (!v.trim()) return;
+        const items = getComments();
+        items.push(v);               // No sanitization by design
+        setComments(items);
+        text.value = "";
+        render();
+      });
+      clearBtn.addEventListener("click", ()=>{
+        localStorage.removeItem(KEY);
+        render();
+      });
+      render();
+
+      // expose flag accessor for players' payloads:
+      window.__c2GetFlag = () => {
+        const el = document.getElementById("c2-flag");
+        return el?.content || "";
+      };
+    })();
+  </script>
+</body>
+</html>
